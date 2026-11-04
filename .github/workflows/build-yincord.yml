@@ -1,6 +1,15 @@
 name: Build Yincord V2
 on:
   workflow_dispatch:
+    inputs:
+      renderer_run:
+        description: Optional previous run with compiled-desktop artifact (packaging-only retry)
+        type: string
+        default: ''
+      renderer_version:
+        description: Exact renderer version when reusing an artifact
+        type: string
+        default: ''
   push:
     branches: [main]
 permissions:
@@ -10,13 +19,14 @@ concurrency:
   cancel-in-progress: true
 env:
   BUILD_CHANNEL: stable
-  BUILD_VERSION: 2026.1103.${{ github.run_number }}
+  BUILD_VERSION: ${{ inputs.renderer_version || format('2026.1103.{0}', github.run_number) }}
   FLUXER_MODULES: '0'
   FLUXER_OFFLINE: '1'
   FLUXER_SKIP_NATIVE: 'true'
   NODE_OPTIONS: --max-old-space-size=6144
 jobs:
   renderer:
+    if: ${{ !inputs.renderer_run }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -65,6 +75,7 @@ jobs:
           retention-days: 7
   windows:
     needs: renderer
+    if: ${{ !cancelled() && (needs.renderer.result == 'success' || (needs.renderer.result == 'skipped' && inputs.renderer_run && inputs.renderer_version)) }}
     runs-on: windows-2025
     timeout-minutes: 40
     steps:
@@ -91,6 +102,8 @@ jobs:
         with:
           name: compiled-desktop
           path: source/fluxer_desktop/dist
+          run-id: ${{ inputs.renderer_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Package Windows portable
         working-directory: source/fluxer_desktop
         run: pnpm exec electron-builder --config yincord-builder.cjs --win portable --x64 --publish never
