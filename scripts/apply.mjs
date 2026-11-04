@@ -11,6 +11,13 @@ function edit(file, before, after) {
 const identity='fluxer_desktop/src/common/DesktopIdentity.ts';
 edit(identity, "'app.fluxer", "'app.yincord.v2");
 edit(identity, "'fluxer", "'yincord_v2");
+// Keep profiles separate from both upstream Fluxer and the original Yincord app.
+for (const file of ['fluxer_desktop/src/common/UserDataPath.ts', 'fluxer_desktop/scripts/release-check.mjs']) {
+ edit(file, "stable: 'fluxer'", "stable: 'yincord-v2'");
+ edit(file, "canary: 'fluxercanary'", "canary: 'yincord-v2-canary'");
+ edit(file, "development: 'fluxerdevelopment'", "development: 'yincord-v2-development'");
+}
+edit('fluxer_desktop/scripts/release-check.mjs', '/^fluxer/iu', '/^yincord/iu');
 const constants='fluxer_desktop/src/common/Constants.ts';
 edit(constants, "stable: 'fluxer'", "stable: 'yincord'");
 edit(constants, "canary: 'fluxer'", "canary: 'yincord-canary'");

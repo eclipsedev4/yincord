@@ -94,6 +94,9 @@ jobs:
       - name: Package Windows portable
         working-directory: source/fluxer_desktop
         run: pnpm exec electron-builder --config yincord-builder.cjs --win portable --x64 --publish never
+      - name: Verify Windows app opens the bundled renderer
+        working-directory: source/fluxer_desktop
+        run: node scripts/release-check.mjs --app yincord-release/win-unpacked --channel stable --expect-renderer $env:BUILD_VERSION --expect-source bundled --app-arg=--disable-gpu --timeout-seconds 240
       - uses: actions/upload-artifact@v4
         with:
           name: Yincord-V2-Windows-x64
