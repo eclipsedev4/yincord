@@ -41,7 +41,8 @@ try {
     const reported=log.includes('The renderer reported its build:') && log.includes('Web '+expectedVersion);
     const fatal=/NativeModulePreflight.*Fatal|native module preflight failed|Uncaught exception/i.test(log);
     if(fatal) throw new Error('Startup reported a fatal error');
-    if(state?.version===expectedVersion && state.bridge && state.text.length>80 && state.actions.length>0 && /^Yincord/i.test(state.title) && reported && Date.now()-startedAt>10000) {
+    // The welcome screen is deliberately brief; require a visible enabled text action, not a large word count.
+    if(state?.version===expectedVersion && state.bridge && state.text.length>20 && state.actions.length>0 && /^Yincord/i.test(state.title) && reported && Date.now()-startedAt>10000) {
      const shot=await cdp(page.webSocketDebuggerUrl,'Page.captureScreenshot',{format:'png'});
      fs.writeFileSync(path.join(output,'window.png'),Buffer.from(shot.data,'base64'));
      result={ok:true,version:expectedVersion,page:state,processAlive:child.exitCode===null,executableBytes:fs.statSync(executable).size};
