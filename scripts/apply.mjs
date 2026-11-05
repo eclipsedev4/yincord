@@ -9,6 +9,9 @@ function edit(file, before, after) {
  fs.writeFileSync(target,text.replaceAll(before,after));
 }
 const identity='fluxer_desktop/src/common/DesktopIdentity.ts';
+edit('fluxer_app/index.html', '<title>Fluxer</title>', '<title>Yincord</title>');
+edit('fluxer_app/index.html', 'name="apple-mobile-web-app-title" content="Fluxer"', 'name="apple-mobile-web-app-title" content="Yincord"');
+edit('fluxer_app/src/features/app/state/AppShellBranding.ts', 'productName: branding.product_name,', 'productName: PRODUCT_NAME,');
 edit(identity, "'app.fluxer", "'app.yincord.v2");
 edit(identity, "'fluxer", "'yincord_v2");
 // Keep profiles separate from both upstream Fluxer and the original Yincord app.
