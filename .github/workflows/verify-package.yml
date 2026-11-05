@@ -1,0 +1,61 @@
+name: Verify existing Windows package
+on:
+  workflow_dispatch:
+    inputs:
+      package_run:
+        description: Run containing the native Windows debug build
+        required: true
+        type: string
+      version:
+        description: Expected bundled renderer version
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+      - uses: actions/download-artifact@v4
+        with:
+          name: Yincord-V2-unverified-debug-build
+          path: package
+          run-id: ${{ inputs.package_run }}
+          github-token: ${{ github.token }}
+      - name: Extract portable app for verification
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem package -Filter *.exe | Select-Object -First 1
+          if (-not $exe) { throw 'Missing portable executable' }
+          7z x $exe.FullName -ounpacked -y
+          if ($LASTEXITCODE -ne 0) { throw 'Portable extraction failed' }
+          $payload = Get-ChildItem unpacked -Recurse -Filter *.7z | Select-Object -First 1
+          if ($payload) {
+            7z x $payload.FullName -otest-app -y
+            if ($LASTEXITCODE -ne 0) { throw 'Payload extraction failed' }
+          } else {
+            Copy-Item unpacked test-app -Recurse
+          }
+          $app = Get-ChildItem test-app -Recurse -Filter Yincord.exe | Select-Object -First 1
+          if (-not $app) { throw 'Missing Yincord app' }
+          "YINCORD_TEST_EXE=$($app.FullName)" >> $env:GITHUB_ENV
+      - name: Verify actual desktop window and bundled version
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: node scripts/smoke-desktop.mjs $env:YINCORD_TEST_EXE $env:EXPECTED_VERSION smoke-results
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: Yincord-V2-startup-check
+          path: smoke-results
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Yincord-V2-Windows-x64
+          path: package/*.exe
+          retention-days: 7

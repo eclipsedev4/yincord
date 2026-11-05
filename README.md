@@ -6,11 +6,13 @@ This repository stores a pinned upstream revision and our source customizations.
 
 ## Status
 
-Experimental; no successful build or runtime verification yet. The existing Sharkord server and accounts are incompatible with this client. Upstream instance endpoints remain until a compatible Yincord backend is configured. Do not represent this build as a working independent Yincord service.
+Experimental. Renderer compilation and Windows executable packaging have passed. Startup verification found missing native modules; the workflow now builds and verifies them on Windows before packaging. A successful startup check is still required before delivery. The existing Sharkord server and accounts are incompatible with this client. Upstream instance endpoints remain until a compatible Yincord backend is configured. Do not represent this build as a working independent Yincord service.
 
 ## Build
 
-Open Actions → Build Yincord V2 → Run workflow. The workflow also runs on pushes to main. Download the Windows artifact only after both jobs pass. Native optional addons are disabled for the initial build, so native capture and input-hook features need further work.
+Open Actions → Build Yincord V2 → Run workflow. The workflow also runs on pushes to main. Download the Windows artifact only after the Windows startup check passes. Native Windows modules are compiled with Rust and MSVC on the runner. Calls, capture and input hooks need functional testing in addition to the startup check.
+
+For a packaging-only retry, supply the earlier run ID in `renderer_run` and its exact renderer version in `renderer_version`. Leave both blank for a full build. Reuse is appropriate only when changes do not affect compiled renderer or desktop JavaScript. Artifacts named `unverified-debug-build` have failed validation and are for debugging, not release.
 
 ## Source and notices
 

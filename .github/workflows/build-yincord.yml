@@ -123,13 +123,13 @@ jobs:
         run: pnpm exec electron-builder --config yincord-builder.cjs --win portable --x64 --publish never
       - name: Verify Windows app opens the bundled renderer
         working-directory: source/fluxer_desktop
-        run: node scripts/release-check.mjs --app yincord-release/win-unpacked --channel stable --expect-renderer $env:BUILD_VERSION --expect-source bundled --app-arg=--disable-gpu --timeout-seconds 120 --workdir release-check --keep
+        run: node ../../scripts/smoke-desktop.mjs yincord-release/win-unpacked/Yincord.exe $env:BUILD_VERSION smoke-results
       - name: Retain startup diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
           name: Yincord-V2-startup-diagnostics
-          path: source/fluxer_desktop/release-check/**/*.log
+          path: source/fluxer_desktop/smoke-results
       - name: Retain executable for debugging
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
