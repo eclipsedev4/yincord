@@ -77,7 +77,7 @@ jobs:
     needs: renderer
     if: ${{ !cancelled() && (needs.renderer.result == 'success' || (needs.renderer.result == 'skipped' && inputs.renderer_run && inputs.renderer_version)) }}
     runs-on: windows-2025
-    timeout-minutes: 40
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - name: Read upstream pin
@@ -98,6 +98,20 @@ jobs:
       - name: Install Windows packaging dependencies
         working-directory: source
         run: pnpm install --frozen-lockfile --filter fluxer_desktop...
+      - name: Set up Windows compiler
+        uses: TheMrMilchmann/setup-msvc-dev@368ef7d1ee4d1171b31d4a7f67f4d954f903f5a9
+        with:
+          arch: amd64
+      - name: Set up Rust for Windows
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.98.1'
+          targets: x86_64-pc-windows-msvc
+      - name: Build and verify required Windows native modules
+        working-directory: source/fluxer_desktop
+        env:
+          FLUXER_SKIP_NATIVE: 'false'
+        run: node --input-type=module -e "import {buildNativeAddons} from './scripts/build.mjs'; buildNativeAddons();"
       - uses: actions/download-artifact@v4
         with:
           name: compiled-desktop

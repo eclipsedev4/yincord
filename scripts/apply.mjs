@@ -19,6 +19,8 @@ for (const file of ['fluxer_desktop/src/common/UserDataPath.ts', 'fluxer_desktop
 }
 edit('fluxer_desktop/scripts/release-check.mjs', '/^fluxer/iu', '/^yincord/iu');
 edit('fluxer_desktop/scripts/release-check.mjs', "{env: environment, stdio: 'ignore'}", "{env: environment, stdio: 'inherit'}");
+// Reuse upstream's native compilation, artifact-copying and verification without rebuilding the renderer.
+edit('fluxer_desktop/scripts/build.mjs', 'function buildNativeAddons() {', 'export function buildNativeAddons() {');
 const constants='fluxer_desktop/src/common/Constants.ts';
 edit(constants, "stable: 'fluxer'", "stable: 'yincord'");
 edit(constants, "canary: 'fluxer'", "canary: 'yincord-canary'");
