@@ -43,7 +43,22 @@ jobs:
           $core = Join-Path $sdkLib 'Microsoft.Web.WebView2.Core.dll'
           $forms = Join-Path $sdkLib 'Microsoft.Web.WebView2.WinForms.dll'
           $loader = Join-Path $PWD 'sdk/runtimes/win-x64/native/WebView2Loader.dll'
-          & $compiler /nologo /target:winexe /platform:x64 /optimize+ /out:release/Yincord.exe /win32icon:yincord.ico /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.IO.Compression.dll /reference:System.Web.Extensions.dll "/reference:$core" "/reference:$forms" '/resource:renderer.zip,renderer.zip' "/resource:$core,Microsoft.Web.WebView2.Core.dll" "/resource:$forms,Microsoft.Web.WebView2.WinForms.dll" "/resource:$loader,WebView2Loader.dll" lightweight/Program.cs
+          $source = (Resolve-Path -LiteralPath 'lightweight/Program.cs').Path
+          $output = Join-Path $PWD 'release\Yincord.exe'
+          $iconPath = (Resolve-Path -LiteralPath 'yincord.ico').Path
+          $bundle = (Resolve-Path -LiteralPath 'renderer.zip').Path
+          $compilerArgs = @(
+            '/nologo', '/target:winexe', '/platform:x64', '/optimize+',
+            "/out:$output", "/win32icon:$iconPath",
+            '/reference:System.Windows.Forms.dll', '/reference:System.Drawing.dll',
+            '/reference:System.IO.Compression.dll', '/reference:System.Web.Extensions.dll',
+            "/reference:$core", "/reference:$forms",
+            "/resource:$bundle,renderer.zip",
+            "/resource:$core,Microsoft.Web.WebView2.Core.dll",
+            "/resource:$forms,Microsoft.Web.WebView2.WinForms.dll",
+            "/resource:$loader,WebView2Loader.dll", $source
+          )
+          & $compiler @compilerArgs
           if ($LASTEXITCODE -ne 0) { throw 'Compilation failed' }
           $bytes = (Get-Item release/Yincord.exe).Length
           @{ executableBytes=$bytes; maximumBytes=300000000; runtime='Shared Windows WebView2'; expandsInterfaceToDisk=$false } | ConvertTo-Json | Set-Content release/size-report.json
