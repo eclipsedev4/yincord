@@ -26,13 +26,7 @@ jobs:
           7z a -tzip -mx=9 ../../renderer.zip . '-xr!*.map'
           if ($LASTEXITCODE -ne 0) { throw 'Renderer compression failed' }
           Pop-Location
-          Add-Type -AssemblyName System.Drawing
-          $bitmap = [Drawing.Bitmap]::FromFile((Join-Path $PWD 'assets/icon.png'))
-          $icon = [Drawing.Icon]::FromHandle($bitmap.GetHicon())
-          $file = [IO.File]::Create((Join-Path $PWD 'yincord.ico'))
-          $icon.Save($file)
-          $file.Dispose()
-          $bitmap.Dispose()
+          Copy-Item assets/yincord.ico yincord.ico
       - name: Compile a single executable with embedded assets
         shell: pwsh
         run: |
