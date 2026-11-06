@@ -69,6 +69,7 @@ sealed class ClientWindow : Form {
     readonly WebView2 view = new WebView2();
     readonly JavaScriptSerializer json = new JavaScriptSerializer();
     readonly List<string> errors = new List<string>();
+    readonly List<string> browserDiagnostics = new List<string>();
     internal ClientWindow() {
         Text = "Yincord";
         Width = 1200; Height = 800; MinimumSize = new Size(800, 600);
@@ -86,6 +87,16 @@ sealed class ClientWindow : Form {
             string profile = Program.TestOutput == null ? Path.Combine(Program.DataRoot, "profile") : Path.Combine(Program.TestOutput, "profile");
             var environment = await CoreWebView2Environment.CreateAsync(null, profile, options);
             await view.EnsureCoreWebView2Async(environment);
+            if (Program.TestOutput != null) {
+                foreach (string eventName in new [] { "Runtime.exceptionThrown", "Runtime.consoleAPICalled", "Log.entryAdded" }) {
+                    string capturedName = eventName;
+                    view.CoreWebView2.GetDevToolsProtocolEventReceiver(eventName).DevToolsProtocolEventReceived += delegate(object sender, CoreWebView2DevToolsProtocolEventReceivedEventArgs e) {
+                        browserDiagnostics.Add(capturedName + " " + e.ParameterObjectAsJson);
+                    };
+                }
+                await view.CoreWebView2.CallDevToolsProtocolMethodAsync("Runtime.enable", "{}");
+                await view.CoreWebView2.CallDevToolsProtocolMethodAsync("Log.enable", "{}");
+            }
             view.CoreWebView2.Settings.IsStatusBarEnabled = false;
             view.CoreWebView2.Settings.AreDevToolsEnabled = Program.TestOutput != null;
             view.CoreWebView2.AddWebResourceRequestedFilter(Origin + "/*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
@@ -120,7 +131,7 @@ sealed class ClientWindow : Form {
                 if (entry == null && (key.Length == 0 || key == "login" || key == "register" || key.StartsWith("channels/"))) {
                     key = "index.html"; entry = zip.GetEntry(key);
                 }
-                if (entry == null) { Reply(e, null, 404, "text/plain"); return; }
+                if (entry == null) { browserDiagnostics.Add("Missing local resource: " + key); Reply(e, null, 404, "text/plain"); return; }
                 MemoryStream content = new MemoryStream();
                 if (e.Request.Method == "GET") using (Stream input = entry.Open()) input.CopyTo(content);
                 content.Position = 0;
@@ -163,12 +174,27 @@ sealed class ClientWindow : Form {
             var state = json.Deserialize<Dictionary<string, object>>(stateText);
             string title = Convert.ToString(state["title"]), text = Convert.ToString(state["text"]);
             var actions = state["actions"] as System.Collections.ArrayList;
-            if (attempt >= 9 && title.StartsWith("Yincord") && text.Length > 20 && actions != null && actions.Count > 0 && Convert.ToBoolean(state["secure"]) && errors.Count == 0) { passed = true; break; }
+            if (attempt >= 9 && (text.Contains("Could not load this page") || text.Contains("Something went wrong"))) {
+                errors.Add("The renderer displayed an error page."); break;
+            }
+            bool hasEntryAction = actions != null && actions.ToArray().AnyEntryAction();
+            if (attempt >= 9 && title.StartsWith("Yincord") && text.Length > 20 && hasEntryAction && Convert.ToBoolean(state["secure"]) && errors.Count == 0) { passed = true; break; }
         }
         using (FileStream shot = File.Create(Path.Combine(Program.TestOutput, "window.png")))
             await view.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, shot);
         File.WriteAllText(Path.Combine(Program.TestOutput, "result.json"), json.Serialize(new { ok = passed, errors = errors, executableBytes = new FileInfo(Application.ExecutablePath).Length }));
+        File.WriteAllLines(Path.Combine(Program.TestOutput, "browser-diagnostics.txt"), browserDiagnostics);
         Environment.ExitCode = passed ? 0 : 1;
         Close();
+    }
+}
+
+static class StartupActions {
+    internal static bool AnyEntryAction(this object[] actions) {
+        foreach (object action in actions) {
+            string text = Convert.ToString(action).Trim().ToLowerInvariant();
+            if (text == "continue" || text == "sign in" || text == "log in" || text == "create account" || text == "connect") return true;
+        }
+        return false;
     }
 }
