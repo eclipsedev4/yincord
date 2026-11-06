@@ -12,6 +12,7 @@ const identity='fluxer_desktop/src/common/DesktopIdentity.ts';
 edit('fluxer_app/index.html', '<title>Fluxer</title>', '<title>Yincord</title>');
 edit('fluxer_app/index.html', 'name="apple-mobile-web-app-title" content="Fluxer"', 'name="apple-mobile-web-app-title" content="Yincord"');
 edit('fluxer_app/src/features/app/state/AppShellBranding.ts', 'productName: branding.product_name,', 'productName: PRODUCT_NAME,');
+edit('fluxer_app/src/features/ui/components/icons/FluxerWordmark.tsx', 'if (productName !== DEFAULT_APP_SHELL_BRANDING.productName) {', "if (productName === 'Yincord' || productName !== DEFAULT_APP_SHELL_BRANDING.productName) {");
 edit(identity, "'app.fluxer", "'app.yincord.v2");
 edit(identity, "'fluxer", "'yincord_v2");
 // Keep profiles separate from both upstream Fluxer and the original Yincord app.
@@ -24,6 +25,8 @@ edit('fluxer_desktop/scripts/release-check.mjs', '/^fluxer/iu', '/^yincord/iu');
 edit('fluxer_desktop/scripts/release-check.mjs', "{env: environment, stdio: 'ignore'}", "{env: environment, stdio: 'inherit'}");
 // Reuse upstream's native compilation, artifact-copying and verification without rebuilding the renderer.
 edit('fluxer_desktop/scripts/build.mjs', 'function buildNativeAddons() {', 'export function buildNativeAddons() {');
+edit('fluxer_desktop/scripts/build.mjs', 'function copyRuntimeArtifactsToInstalledPackages(', 'export function copyRuntimeArtifactsToInstalledPackages(');
+edit('fluxer_desktop/scripts/build.mjs', 'function verifyInstalledNativeArtifacts() {', 'export function verifyInstalledNativeArtifacts() {');
 const constants='fluxer_desktop/src/common/Constants.ts';
 edit(constants, "stable: 'fluxer'", "stable: 'yincord'");
 edit(constants, "canary: 'fluxer'", "canary: 'yincord-canary'");

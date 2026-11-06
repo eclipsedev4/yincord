@@ -14,6 +14,7 @@ on:
     branches: [main]
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: yincord-v2
   cancel-in-progress: true
@@ -98,16 +99,46 @@ jobs:
       - name: Install Windows packaging dependencies
         working-directory: source
         run: pnpm install --frozen-lockfile --filter fluxer_desktop...
+      - name: Select compatible native cache
+        id: native-cache
+        run: |
+          $pin = Get-Content upstream.json | ConvertFrom-Json
+          $cache = Get-Content native-cache.json | ConvertFrom-Json
+          if ($cache.upstream_commit -eq $pin.commit) {
+            "run=$($cache.run_id)" >> $env:GITHUB_OUTPUT
+            "artifact=$($cache.artifact_name)" >> $env:GITHUB_OUTPUT
+          }
+      - uses: actions/download-artifact@v4
+        if: ${{ steps.native-cache.outputs.run }}
+        with:
+          name: ${{ steps.native-cache.outputs.artifact }}
+          path: native-package
+          run-id: ${{ steps.native-cache.outputs.run }}
+          github-token: ${{ github.token }}
+      - name: Restore verified native modules
+        if: ${{ steps.native-cache.outputs.run }}
+        run: |
+          $exe = Get-ChildItem native-package -Filter *.exe | Select-Object -First 1
+          7z x $exe.FullName -onative-outer -y
+          if ($LASTEXITCODE -ne 0) { throw 'Native cache extraction failed' }
+          $payload = Get-ChildItem native-outer -Recurse -Filter *.7z | Select-Object -First 1
+          if (-not $payload) { throw 'Missing native cache payload' }
+          7z x $payload.FullName -onative-app -y
+          if ($LASTEXITCODE -ne 0) { throw 'Native payload extraction failed' }
+          node scripts/restore-native.mjs native-app
       - name: Set up Windows compiler
+        if: ${{ !steps.native-cache.outputs.run }}
         uses: TheMrMilchmann/setup-msvc-dev@368ef7d1ee4d1171b31d4a7f67f4d954f903f5a9
         with:
           arch: amd64
       - name: Set up Rust for Windows
+        if: ${{ !steps.native-cache.outputs.run }}
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: '1.98.1'
           targets: x86_64-pc-windows-msvc
       - name: Build and verify required Windows native modules
+        if: ${{ !steps.native-cache.outputs.run }}
         working-directory: source/fluxer_desktop
         env:
           FLUXER_SKIP_NATIVE: 'false'
