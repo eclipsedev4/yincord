@@ -88,7 +88,7 @@ sealed class ClientWindow : Form {
             await view.EnsureCoreWebView2Async(environment);
             view.CoreWebView2.Settings.IsStatusBarEnabled = false;
             view.CoreWebView2.Settings.AreDevToolsEnabled = Program.TestOutput != null;
-            view.CoreWebView2.AddWebResourceRequestedFilter(Origin + "/*", CoreWebView2WebResourceContext.All);
+            view.CoreWebView2.AddWebResourceRequestedFilter(Origin + "/*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
             view.CoreWebView2.WebResourceRequested += ServeResource;
             view.CoreWebView2.NewWindowRequested += delegate(object sender, CoreWebView2NewWindowRequestedEventArgs e) {
                 e.Handled = true;
