@@ -6,7 +6,9 @@ This repository stores a pinned upstream revision and our source customizations.
 
 ## Status
 
-Experimental. Renderer compilation and Windows executable packaging have passed. Startup verification found missing native modules; the workflow now builds and verifies them on Windows before packaging. A successful startup check is still required before delivery. The existing Sharkord server and accounts are incompatible with this client. Upstream instance endpoints remain until a compatible Yincord backend is configured. Do not represent this build as a working independent Yincord service.
+Experimental. The Windows desktop build has passed startup verification on GitHub. The portable launcher expands the app into a temporary folder; the build report records its unpacked size and recommended free space. Release packages exclude JavaScript and CSS debugging source maps.
+
+Yincord will use fresh accounts and fresh communities. No migration or import from the previous app is planned. The independent backend is not deployed yet, and upstream instance endpoints remain in this development client. Do not represent it as a working independent Yincord service.
 
 ## Build
 

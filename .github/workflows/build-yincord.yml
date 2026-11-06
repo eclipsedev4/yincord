@@ -152,9 +152,26 @@ jobs:
       - name: Package Windows portable
         working-directory: source/fluxer_desktop
         run: pnpm exec electron-builder --config yincord-builder.cjs --win portable --x64 --publish never
+      - name: Report download and unpacked sizes
+        working-directory: source/fluxer_desktop
+        run: |
+          $appBytes = (Get-ChildItem yincord-release/win-unpacked -Recurse -File | Measure-Object Length -Sum).Sum
+          $exe = Get-ChildItem yincord-release -Filter *.exe | Select-Object -First 1
+          $mapBytes = (Get-ChildItem dist -Recurse -File | Where-Object { $_.Name -match '\.(js|cjs|css)\.map$' } | Measure-Object Length -Sum).Sum
+          $report = [ordered]@{version=$env:BUILD_VERSION; downloadBytes=$exe.Length; unpackedBytes=$appBytes; excludedSourceMapBytes=$mapBytes; recommendedFreeBytes=($appBytes + 300MB)}
+          $report | ConvertTo-Json | Set-Content yincord-release/package-size.json
+          $report | ConvertTo-Json
       - name: Verify Windows app opens the bundled renderer
         working-directory: source/fluxer_desktop
         run: node ../../scripts/smoke-desktop.mjs yincord-release/win-unpacked/Yincord.exe $env:BUILD_VERSION smoke-results
+      - name: Save size report and startup evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Yincord-V2-build-report
+          path: |
+            source/fluxer_desktop/yincord-release/package-size.json
+            source/fluxer_desktop/smoke-results
       - name: Retain startup diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4

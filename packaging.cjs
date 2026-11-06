@@ -3,7 +3,8 @@ module.exports = {
  productName: 'Yincord',
  artifactName: 'Yincord-V2-${version}-win-${arch}.${ext}',
  directories: {output: 'yincord-release'},
- files: ['dist/**/*', 'package.json'],
+ // Debugging source maps are not needed to run the release.
+ files: ['dist/**/*', 'package.json', '!dist/**/*.js.map', '!dist/**/*.cjs.map', '!dist/**/*.css.map'],
  extraResources: [
   {from: '../LICENSE', to: 'LICENSE'},
   {from: '../YINCORD-V2.md', to: 'YINCORD-V2.md'},
